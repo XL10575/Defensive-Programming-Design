@@ -1,0 +1,89 @@
+
+<project name="EventOverlapChecker" xmlns:jacoco="antlib:org.jacoco.ant">
+  <property name="src.dir" value="src"/>
+  <property name="build.dir" value="build"/>
+  <property name="output.dir" value="output"/>
+  <property name="output.file" value="${output.dir}/output.txt"/>
+  <property name="error.file" value="${output.dir}/error.txt"/>
+  <property name="report.dir" value="report"/>
+  <property name="junit.dir" value="${report.dir}/junit"/>
+  <property name="jacoco.dir" value="${report.dir}/jacoco"/>
+  <property name="jacoco.file" value="${jacoco.dir}/jacoco.exec"/>
+  <property name="doc.dir" value="doc"/>
+  <property name="main-class" value="EventScheduleMain"/>
+
+  <path id="project.classpath">
+    <pathelement location="${ant.home}/lib/hamcrest-2.2.jar"/>
+    <pathelement location="${ant.home}/lib/junit-4.13.jar"/>
+  </path>
+
+  <target name="clean">
+    <delete dir="${build.dir}"/>
+    <delete dir="${report.dir}"/>
+    <delete dir="${doc.dir}"/>
+    <delete dir="${output.dir}"/>
+  </target>
+
+  <target name="build">
+    <mkdir dir="${build.dir}"/>
+    <javac srcdir="${src.dir}" destdir="${build.dir}" debug="true" includeAntRuntime="yes"/>
+  </target>
+
+  <target name="run" depends="build">
+    <mkdir dir="${output.dir}"/>
+    <java fork="true" classname="${main-class}" classpath="${build.dir}" output="${output.file}" error="${error.file}">
+      <assertions><enable/></assertions>
+      <arg line="${args}"/>
+    </java>
+  </target>
+
+  <target name="test" depends="build">
+    <mkdir dir="${report.dir}"/>
+    <mkdir dir="${junit.dir}"/>
+    <mkdir dir="${jacoco.dir}"/>
+    <jacoco:coverage destfile="${jacoco.file}">
+      <junit fork="yes" includeAntRuntime="yes" printsummary="withOutAndErr">
+        <assertions><enable/></assertions>
+        <formatter type="xml"/>
+        <batchtest fork="yes" filtertrace="off" todir="${junit.dir}">
+          <fileset dir="${build.dir}" includes="**/*Test.class"/>
+        </batchtest>
+        <classpath refid="project.classpath"/>
+        <classpath path="${build.dir}"/>
+      </junit>
+    </jacoco:coverage>
+  </target>
+
+  <target name="report" depends="test">
+    <junitreport todir="${junit.dir}">
+      <fileset dir="${junit.dir}" includes="TEST-*.xml"/>
+      <report todir="${junit.dir}"/>
+    </junitreport>
+
+    <jacoco:report>
+      <executiondata>
+        <file file="${jacoco.file}"/>
+      </executiondata>
+      <structure name="${ant.project.name}">
+        <classfiles>
+          <fileset dir="${build.dir}">
+            <exclude name="**/*Test*.class"/>
+          </fileset>
+        </classfiles>
+        <sourcefiles>
+          <fileset dir="${src.dir}"/>
+        </sourcefiles>
+      </structure>
+      <html destdir="${jacoco.dir}"/>
+    </jacoco:report>
+  </target>
+
+  <target name="doc">
+    <mkdir dir="${doc.dir}"/>
+    <javadoc destdir="${doc.dir}" package="yes">
+      <fileset dir="${src.dir}" defaultexcludes="yes">
+        <exclude name="**/*Test.java"/>
+      </fileset>
+    </javadoc>
+  </target>
+</project>
